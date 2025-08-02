@@ -17,10 +17,32 @@ in
 
 pkgs.appendOverlays [(
   final: super:
+  let
+    inherit (final)
+      callPackage
+    ;
+  in
   {
-    hijack-bin = final.callPackage ./hijack-bin {};
+    hijack-bin = callPackage ./hijack-bin {};
+    weirdStdenv = callPackage (
+      { overrideCC
+      , stdenv
+      , hijack-bin
+      }:
+      let
+        newCC =
+          hijack-bin {
+            package = stdenv.cc;
+          }
+        ;
+      in
+      overrideCC stdenv newCC
+    ) {};
     hello = final.hijack-bin {
       package = super.hello;
+    };
+    weirder-hello = super.hello.override {
+      stdenv = final.weirdStdenv;
     };
   }
 )]
